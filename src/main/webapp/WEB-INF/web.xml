@@ -2,16 +2,20 @@
 <web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://java.sun.com/xml/ns/javaee" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd" id="WebApp_ID" version="3.0">
     <servlet>
         <!-- 声明Servlet对象 -->
-        <servlet-name>FirstServlet</servlet-name>
+        <servlet-name>myServlet</servlet-name>
         <!-- 上面一句指定Servlet对象的名称 -->
         <servlet-class>com.zhang.summer.servlet.MyServlet</servlet-class>
         <!-- 上面一句指定Servlet对象的完整位置，包含包名和类名 -->
+        <init-param>
+            <param-name>contextConfigLocation</param-name>
+            <param-value>classpath:config.properties</param-value>
+        </init-param>
     </servlet>
     <servlet-mapping>
         <!-- 映射Servlet -->
-        <servlet-name>FirstServlet</servlet-name>
+        <servlet-name>myServlet</servlet-name>
         <!--<servlet-name>与上面<Servlet>标签的<servlet-name>元素相对应，不可以随便起名  -->
-        <url-pattern>/**</url-pattern>
+        <url-pattern>/</url-pattern>
         <!-- 上面一句话用于映射访问URL -->
     </servlet-mapping>
 </web-app>
