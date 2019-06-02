@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -64,16 +65,15 @@ public class MyServlet extends HttpServlet {
             doLoadProperties(config.getInitParameter("contextConfigLocation"));
             // 1、Tomcat启动过程中，加载war包时，首先根据配置或者指定的包扫描war包下面的类声明的spring指定的注解
             doBasePackageScan(properties.getProperty("scanPackage"));
-            // 2、扫描找到对应的类
-            // 3、并创建对象（Spring中使用反射创建对象class.forName方法）
+            // 2、创建对象（Spring中使用反射创建对象class.forName方法）
             doInstance();
-            // 4、创建自己的IOC容器
-            // 5、将创建好的对象放到自己定义的IOC容器中
-            // 6、@Autowrite注解到的对象会在IOC容器中get对应的对象，注入到指定的对象中
+            // 3、创建自己的IOC容器
+            // 将创建好的对象放到自己定义的IOC容器中
+            // @Autowrite注解到的对象会在IOC容器中get对应的对象，注入到指定的对象中
             doAutowrite();
-            // 7、@RequestMapping上的路径如何映射到对应的控制类和方法上？：：：启动时将控制类中所有路径映射到方法上，绑定起来
+            // 4、@RequestMapping上的路径如何映射到对应的控制类和方法上？：：：启动时将控制类中所有路径映射到方法上，绑定起来
             doUrlMapping();
-            // 8、接收到请求之后处理请求分发
+            // 5、接收到请求之后处理请求分发 在doGet或者doPost完成
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -114,6 +114,23 @@ public class MyServlet extends HttpServlet {
      * 处理URL和方法的映射关系
      */
     private void doUrlMapping() {
+        // 遍历所有bean如果是controller在进行处理
+        for(Map.Entry<String, Object> entry : iocMap.entrySet()){
+            Object bean = entry.getValue();
+            if(bean.getClass().isAnnotationPresent(MyController.class)){
+                String beanName = entry.getKey();
+                Method[] methods = bean.getClass().getMethods();
+                for(Method n : methods){
+                    if(n.isAnnotationPresent(MyRequestMapping.class)){
+                        String mUrl = n.getAnnotation(MyRequestMapping.class).value();
+                        if(StrUtil.isBlank(mUrl)){
+                            log.error("方法未声明URL");
+                        }
+                        log.info("Mapped --- URL: {}", beanName + mUrl);
+                    }
+                }
+            }
+        }
 
     }
 
