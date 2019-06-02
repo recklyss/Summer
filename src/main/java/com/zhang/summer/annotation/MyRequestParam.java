@@ -1,4 +1,4 @@
-package com.zhang.summer.MyAnnotation;
+package com.zhang.summer.annotation;
 
 import java.lang.annotation.*;
 

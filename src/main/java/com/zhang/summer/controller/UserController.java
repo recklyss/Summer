@@ -1,9 +1,9 @@
 package com.zhang.summer.controller;
 
-import com.zhang.summer.MyAnnotation.MyAutowrite;
-import com.zhang.summer.MyAnnotation.MyController;
-import com.zhang.summer.MyAnnotation.MyRequestMapping;
-import com.zhang.summer.MyAnnotation.MyRequestParam;
+import com.zhang.summer.annotation.MyAutowrite;
+import com.zhang.summer.annotation.MyController;
+import com.zhang.summer.annotation.MyRequestMapping;
+import com.zhang.summer.annotation.MyRequestParam;
 import com.zhang.summer.service.UserService;
 
 import javax.servlet.http.HttpServletRequest;

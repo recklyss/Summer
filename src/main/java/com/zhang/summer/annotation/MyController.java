@@ -1,4 +1,4 @@
-package com.zhang.summer.MyAnnotation;
+package com.zhang.summer.annotation;
 
 import java.lang.annotation.*;
 
@@ -9,6 +9,5 @@ import java.lang.annotation.*;
 @Target(ElementType.TYPE)// 只能使用在Java类上面
 @Retention(RetentionPolicy.RUNTIME)// 运行时
 @Documented
-public @interface MyService {
-    String value();
+public @interface MyController {
 }

@@ -1,6 +1,6 @@
 package com.zhang.summer.service;
 
-import com.zhang.summer.MyAnnotation.MyService;
+import com.zhang.summer.annotation.MyService;
 
 /**
  * @Author zhangjiaheng

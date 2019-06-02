@@ -4,10 +4,10 @@ import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
-import com.zhang.summer.MyAnnotation.MyAutowrite;
-import com.zhang.summer.MyAnnotation.MyController;
-import com.zhang.summer.MyAnnotation.MyRequestMapping;
-import com.zhang.summer.MyAnnotation.MyService;
+import com.zhang.summer.annotation.MyAutowrite;
+import com.zhang.summer.annotation.MyController;
+import com.zhang.summer.annotation.MyRequestMapping;
+import com.zhang.summer.annotation.MyService;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -126,7 +126,7 @@ public class MyServlet extends HttpServlet {
                         if(StrUtil.isBlank(mUrl)){
                             log.error("方法未声明URL");
                         }
-                        log.info("Mapped --- URL: {}", beanName + mUrl);
+                        log.info("Add Mapping --- URL: {}", beanName + mUrl);
                     }
                 }
             }
