@@ -1,6 +1,7 @@
 package com.zhang.summer.controller;
 
 import com.zhang.summer.annotation.*;
+import com.zhang.summer.dto.UserDTO;
 import com.zhang.summer.service.UserService;
 
 import javax.servlet.http.HttpServletRequest;
@@ -19,10 +20,15 @@ public class UserController {
 
     @MyRequestMapping("/queryUser")
     @MyResponsebody
-    public String queryUser(HttpServletRequest request,
-                            HttpServletResponse response,
-                            @MyRequestParam("username") String name){
+    public UserDTO queryUser(HttpServletRequest request,
+                             HttpServletResponse response,
+                             @MyRequestParam("username") String name){
 
         return userService.getUserName(name);
+    }
+
+    @MyRequestMapping("/request")
+    public String AmIRequestedSuccess(){
+        return "success";
     }
 }

@@ -105,20 +105,24 @@ public class MyServlet extends HttpServlet {
                     paramValues[index] = convert(paramTypes[index], value);
                 }
             }
-            int reqIndex = handler.paramIndexMapping.get(HttpServletRequest.class.getName());
-            int respIndex = handler.paramIndexMapping.get(HttpServletResponse.class.getName());
-            paramValues[reqIndex] = req;
-            paramValues[respIndex] = resp;
+            Integer reqIndex = handler.paramIndexMapping.get(HttpServletRequest.class.getName());
+            if(null != reqIndex){
+                paramValues[reqIndex] = req;
+            }
+            Integer respIndex = handler.paramIndexMapping.get(HttpServletResponse.class.getName());
+            if(null != respIndex){
+                paramValues[respIndex] = resp;
+            }
             Object ret = handler.method.invoke(handler.controller, paramValues);
             resp.setCharacterEncoding("utf-8");
-            if (handler.method.getClass().isAnnotationPresent(MyResponsebody.class)) {
+            // 判断如果加了@MyResponsebody注解就返回JSON对象
+            if (handler.method.isAnnotationPresent(MyResponsebody.class)) {
                 resp.setContentType("application/json; charset=utf-8");
                 //拼接json数据
                 String jsonStr = JSONUtil.toJsonStr(ret);
                 //将数据写入流中
                 resp.getWriter().write(jsonStr);
             }else{
-                resp.setContentType("application/json; charset=utf-8");
                 //将数据写入流中
                 resp.getWriter().write(ret.toString());
             }

@@ -1,6 +1,7 @@
 package com.zhang.summer.service;
 
 import com.zhang.summer.annotation.MyService;
+import com.zhang.summer.dto.UserDTO;
 
 import java.util.HashMap;
 
@@ -11,18 +12,18 @@ import java.util.HashMap;
 @MyService("userService")
 public class UserService {
 
-    private static HashMap<String, String> map = new HashMap<String, String>();
+    private static HashMap<String, UserDTO> map = new HashMap<String, UserDTO>();
 
     static {
-        map.put("jam0", "詹姆斯0");
-        map.put("jam1", "詹姆斯1");
-        map.put("jam2", "詹姆斯2");
-        map.put("jam3", "詹姆斯3");
-        map.put("jam4", "詹姆斯4");
-        map.put("jam5", "詹姆斯5");
+        map.put("jam0", new UserDTO("J1", 12));
+        map.put("jam1", new UserDTO("J2", 13));
+        map.put("jam2", new UserDTO("J3", 14));
+        map.put("jam3", new UserDTO("J4", 15));
+        map.put("jam4", new UserDTO("J5", 16));
+        map.put("jam5", new UserDTO("J6", 17));
     }
 
-    public String getUserName(String name) {
+    public UserDTO getUserName(String name) {
         return map.get(name);
     }
 }
