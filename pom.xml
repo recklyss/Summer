@@ -24,6 +24,11 @@
       <artifactId>jetty-maven-plugin</artifactId>
       <version>9.3.12.v20160915</version>
     </dependency>
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>1.18.2</version>
+    </dependency>
   </dependencies>
 
   <build>

@@ -6,5 +6,5 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)// 运行时
 @Documented
 public @interface MyAutowrite {
-    String value();
+    String value() default "";
 }

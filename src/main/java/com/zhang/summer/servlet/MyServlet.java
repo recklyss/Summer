@@ -1,13 +1,14 @@
 package com.zhang.summer.servlet;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
-import com.zhang.summer.annotation.MyAutowrite;
-import com.zhang.summer.annotation.MyController;
-import com.zhang.summer.annotation.MyRequestMapping;
-import com.zhang.summer.annotation.MyService;
+import com.zhang.summer.annotation.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -17,14 +18,14 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @Author zhangjiaheng
@@ -86,7 +87,75 @@ public class MyServlet extends HttpServlet {
      * @param resp 响应
      */
     private void doDispatcherServlet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        try {
+            Handler handler = getHandler(req);
+            if (null == handler) {
+                log.warn("404 not found url mapping==> {}", req.getRequestURI());
+                resp.getWriter().write("404 not found");
+                return;
+            }
+            Class<?>[] paramTypes = handler.method.getParameterTypes();
+            Object[] paramValues = new Object[paramTypes.length];
+            Map<String, String[]> params = req.getParameterMap();
+            for (Map.Entry<String, String[]> param : params.entrySet()) {
+                String value = Arrays.toString(param.getValue());
+                value = value.replaceAll("\\[|\\]", "");
+                if (handler.paramIndexMapping.containsKey(param.getKey())) {
+                    int index = handler.paramIndexMapping.get(param.getKey());
+                    paramValues[index] = convert(paramTypes[index], value);
+                }
+            }
+            int reqIndex = handler.paramIndexMapping.get(HttpServletRequest.class.getName());
+            int respIndex = handler.paramIndexMapping.get(HttpServletResponse.class.getName());
+            paramValues[reqIndex] = req;
+            paramValues[respIndex] = resp;
+            Object ret = handler.method.invoke(handler.controller, paramValues);
+            resp.setCharacterEncoding("utf-8");
+            if (handler.method.getClass().isAnnotationPresent(MyResponsebody.class)) {
+                resp.setContentType("application/json; charset=utf-8");
+                //拼接json数据
+                String jsonStr = JSONUtil.toJsonStr(ret);
+                //将数据写入流中
+                resp.getWriter().write(jsonStr);
+            }else{
+                resp.setContentType("application/json; charset=utf-8");
+                //将数据写入流中
+                resp.getWriter().write(ret.toString());
+            }
+            log.info("doDispatcherServlet方法执行完成，返回值：{}", ret);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
+    /**
+     * 将整型变量转换一下
+     */
+    private Object convert(Class clazz, String value) {
+        if (clazz == Integer.class) {
+            return Integer.valueOf(value);
+        }
+        return value;
+    }
+
+    /**
+     * 通过请求的URL 获取到handler对象
+     * 其中会有要执行的方法以及参数名对应的下标
+     */
+    private Handler getHandler(HttpServletRequest req) {
+        if (!CollectionUtil.isEmpty(handlerList)) {
+            String url = req.getRequestURI();
+            log.info("get request mapping ==> {}", url);
+            String contextPath = req.getContextPath();
+            String realPath = url.replaceAll(contextPath, "").replaceAll("/+", "/");
+            for (Handler handler : handlerList) {
+                Matcher matcher = handler.pattern.matcher(realPath);
+                if (matcher.matches()) {
+                    return handler;
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -115,18 +184,21 @@ public class MyServlet extends HttpServlet {
      */
     private void doUrlMapping() {
         // 遍历所有bean如果是controller在进行处理
-        for(Map.Entry<String, Object> entry : iocMap.entrySet()){
+        for (Map.Entry<String, Object> entry : iocMap.entrySet()) {
             Object bean = entry.getValue();
-            if(bean.getClass().isAnnotationPresent(MyController.class)){
+            if (bean.getClass().isAnnotationPresent(MyController.class)) {
                 String beanName = entry.getKey();
                 Method[] methods = bean.getClass().getMethods();
-                for(Method n : methods){
-                    if(n.isAnnotationPresent(MyRequestMapping.class)){
-                        String mUrl = n.getAnnotation(MyRequestMapping.class).value();
-                        if(StrUtil.isBlank(mUrl)){
+                for (Method n : methods) {
+                    if (n.isAnnotationPresent(MyRequestMapping.class)) {
+                        String mUrl = beanName + n.getAnnotation(MyRequestMapping.class).value();
+                        if (StrUtil.isBlank(mUrl)) {
                             log.error("方法未声明URL");
+                            continue;
                         }
-                        log.info("Add Mapping --- URL: {}", beanName + mUrl);
+                        Pattern pattern = Pattern.compile(mUrl);
+                        handlerList.add(new Handler(pattern, bean, n));
+                        log.info("Add Mapping --- URL: {}, method: {}", mUrl, n.getName());
                     }
                 }
             }
@@ -137,7 +209,44 @@ public class MyServlet extends HttpServlet {
     /**
      * url映射 封装成handler对象
      */
+    @Getter
+    @Setter
     private class Handler {
+        private Object controller;
+        private Pattern pattern;
+        private Method method;
+        // 使用map存放方法参数对应下标 即第几个参数是什么名字
+        private Map<String, Integer> paramIndexMapping;
+
+        protected Handler(Pattern pattern, Object controller, Method method) {
+            this.controller = controller;
+            this.method = method;
+            this.pattern = pattern;
+            paramIndexMapping = initParamIndexMapping(method);
+        }
+
+        private Map<String, Integer> initParamIndexMapping(Method method) {
+            Map<String, Integer> map = new HashMap<String, Integer>();
+            Annotation[][] annotations = method.getParameterAnnotations();
+            for (int i = 0; i < annotations.length; i++) {
+                for (Annotation annotation : annotations[i]) {
+                    if (annotation instanceof MyRequestParam) {
+                        String paramName = ((MyRequestParam) annotation).value();
+                        if (StrUtil.isNotBlank(paramName)) {
+                            map.put(paramName, i);
+                        }
+                    }
+                }
+            }
+            Class<?>[] paramTypes = method.getParameterTypes();
+            for (int j = 0; j < paramTypes.length; j++) {
+                Class<?> paramType = paramTypes[j];
+                if (paramType == HttpServletRequest.class || paramType == HttpServletResponse.class) {
+                    map.put(paramType.getName(), j);
+                }
+            }
+            return map;
+        }
 
     }
 
@@ -153,7 +262,7 @@ public class MyServlet extends HttpServlet {
             if (clazz.isAnnotationPresent(MyController.class)) {
                 // bean是控制类
                 // 拿到所有成员变量方法 拿到声明了autowrite注解的成员变量
-                Field[] fields = clazz.getFields();
+                Field[] fields = clazz.getDeclaredFields();
                 for (Field field : fields) {
                     // 判断哪些需要注入
                     if (field.isAnnotationPresent(MyAutowrite.class)) {
@@ -161,7 +270,7 @@ public class MyServlet extends HttpServlet {
                         String beanName = autowrite.value();
                         if (StrUtil.isBlank(beanName)) {
                             // 如果没有指定bean名称，就使用变量名
-                            beanName = field.getType().getName();
+                            beanName = StrUtil.lowerFirst(field.getType().getSimpleName());
                         }
                         Object needBeAutowrited = iocMap.get(beanName);
                         if (null == needBeAutowrited) {
